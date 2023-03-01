@@ -1,0 +1,10 @@
+name: alex
+age: 34
+city: null
+is_human: true
+languages:
+  - en
+  - ru
+passport:
+  seria: KB
+  number: 4567891

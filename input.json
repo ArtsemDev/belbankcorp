@@ -1,0 +1,10 @@
+{
+  "name": "Alex",
+  "age": 35,
+  "is_human": true,
+  "city": null,
+  "languages": [
+    "ru",
+    "en"
+  ]
+}

@@ -437,5 +437,12 @@ class Numbers:
         return sum(numbers) / len(numbers)
 
 
-n = Numbers(2, 3, 4, 2, 3, 4, 2, 3, 4, 2, 3, 2, 2, 3, 3)
-print(n.average())
+# n = Numbers(2, 3, 4, 2, 3, 4, 2, 3, 4, 2, 3, 2, 2, 3, 3)
+# print(n.average())
+
+
+from time import sleep
+while True:
+    with open('output.txt', 'r', encoding='utf-8') as file:
+        print(file.read())
+    sleep(2)
