@@ -1,8 +1,10 @@
 from typing import Any, Type, Sequence
+from inspect import iscoroutinefunction
 
 from sqlalchemy import Column, INT, VARCHAR, DECIMAL, ForeignKey, BOOLEAN, \
     create_engine, select, Row, RowMapping
 from sqlalchemy.orm import DeclarativeBase, declared_attr, sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 
 class Base(DeclarativeBase):
@@ -11,51 +13,59 @@ class Base(DeclarativeBase):
     engine = create_engine('postgresql://belbank:belbank@localhost:5432/bank')
     session = sessionmaker(bind=engine)
 
+    async_engine = create_async_engine('postgresql+asyncpg://belbank:belbank@localhost:5432/bank')
+    async_session = async_sessionmaker(bind=async_engine)
+
     @staticmethod
     def create_session(func):
         def wrapper(*args, **kwargs):
             with Base.session() as session:
                 return func(*args, **kwargs, session=session)
 
-        return wrapper
+        async def async_wrapper(*args, **kwargs):
+            async with Base.async_session() as session:
+                return await func(*args, **kwargs, session=session)
+
+        return async_wrapper if iscoroutinefunction(func) else wrapper
 
     @declared_attr
     def __tablename__(cls):
         return ''.join(f'_{i.lower()}' if i.isupper() else i for i in cls.__name__).strip('_')
 
     @create_session
-    def save(self, session: Session = None) -> None:
+    async def save(self, session: AsyncSession = None) -> None:
         session.add(self)
-        session.commit()
-        session.refresh(self)
+        await session.commit()
+        await session.refresh(self)
 
     @classmethod
     @create_session
-    def get(cls, pk: Any, session: Session = None) -> Type["Base"]:
-        return session.get(cls, pk)
+    async def get(cls, pk: Any, session: AsyncSession = None) -> Type["Base"]:
+        return await session.get(cls, pk)
 
     @classmethod
     @create_session
-    def select(
+    async def select(
             cls,
             *args,
             order_by: Any = 'id',
             limit: int = None,
             offset: int = None,
-            session: Session = None
+            session: AsyncSession = None
     ) -> Sequence[Row | RowMapping | Any]:
-        return session.scalars(
+        objs = await session.scalars(
             select(cls)
             .order_by(order_by)
             .limit(limit)
             .offset(offset)
             .filter(*args)
-        ).all()
+        )
+        return objs.all()
 
     @create_session
-    def delete(self, session: Session = None) -> None:
-        session.delete(self)
-        session.commit()
+    async def delete(self, session: AsyncSession = None) -> None:
+        await session.delete(self)
+        await session.commit()
 
     def dict(self) -> dict:
         data = self.__dict__
